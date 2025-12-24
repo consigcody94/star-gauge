@@ -19,7 +19,7 @@
 
 ### A 4th-century Chinese palindrome containing thousands of interlocking poems, now fully translated and interactive
 
-[![Live Demo](https://img.shields.io/badge/LIVE-DEMO-gold?style=for-the-badge&logo=html5)](https://yourusername.github.io/star-gauge)
+[![Live Demo](https://img.shields.io/badge/LIVE-DEMO-gold?style=for-the-badge&logo=html5)](https://consigcody94.github.io/star-gauge)
 [![Translation](https://img.shields.io/badge/FULL-TRANSLATION-blue?style=for-the-badge&logo=bookstack)](star_gauge_translation.md)
 [![Century](https://img.shields.io/badge/4th-CENTURY-purple?style=for-the-badge)](#history)
 
@@ -155,7 +155,7 @@ Open `index.html` in your browser to explore the grid:
 
 ```bash
 # Clone and open
-git clone https://github.com/yourusername/star-gauge.git
+git clone https://github.com/consigcody94/star-gauge.git
 cd star-gauge
 open index.html  # or: xdg-open index.html (Linux)
 ```
