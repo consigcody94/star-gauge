@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Gauge (璇璣圖) - Interactive Translation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #f5af19, #f12711);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .grid-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e8e8e8;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-active {
+            background: linear-gradient(135deg, #f5af19, #f12711) !important;
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(29, 1fr);
+            gap: 2px;
+            font-size: 14px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            font-size: clamp(10px, 1.5vw, 16px);
+            position: relative;
+        }
+
+        .cell:hover {
+            background: rgba(102, 126, 234, 0.3);
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .cell.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .cell.path {
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            color: white;
+        }
+
+        .cell.center {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            font-weight: bold;
+        }
+
+        .cell.border-cell {
+            background: rgba(155, 89, 182, 0.3);
+        }
+
+        .cell .order {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #f5af19;
+        }
+
+        .translation-display {
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .char-entry {
+            display: grid;
+            grid-template-columns: 40px 60px 1fr;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+        }
+
+        .char-entry:last-child {
+            border-bottom: none;
+        }
+
+        .char-chinese {
+            font-size: 1.5rem;
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        .char-pinyin {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+        }
+
+        .char-meaning {
+            font-size: 0.9rem;
+        }
+
+        .poem-display {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .poem-chinese {
+            font-size: 1.2rem;
+            line-height: 2;
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .poem-english {
+            color: #a0a0a0;
+            font-style: italic;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .pattern-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .pattern-btn {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+
+        .info-text {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            color: #f5af19;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #a0a0a0;
+        }
+
+        .mode-indicator {
+            padding: 10px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            margin-top: 10px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .presets-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .preset-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .preset-desc {
+            font-size: 0.85rem;
+            color: #a0a0a0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>璇璣圖 The Star Gauge</h1>
+            <p class="subtitle">Su Hui's 4th Century Reversible Poem - 841 Characters, 7,958+ Poems</p>
+        </header>
+
+        <div class="main-content">
+            <div class="grid-container">
+                <div class="controls">
+                    <button class="btn-primary" onclick="clearSelection()">Clear Selection</button>
+                    <button class="btn-secondary" id="modeBtn" onclick="toggleMode()">Mode: Click Path</button>
+                    <button class="btn-secondary" onclick="showBorder()">Show Border Poem</button>
+                    <button class="btn-secondary" onclick="readRow(0)">Read Row 1 →</button>
+                    <button class="btn-secondary" onclick="readColumn(0)">Read Col 1 ↓</button>
+                    <button class="btn-secondary" onclick="readDiagonal()">Read Diagonal ↘</button>
+                </div>
+
+                <div class="grid" id="grid"></div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #e74c3c, #c0392b);"></div>
+                        <span>Center (心)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgba(155, 89, 182, 0.5);"></div>
+                        <span>Border Poem</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #f5af19, #f12711);"></div>
+                        <span>Selected Path</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="panel">
+                    <h2>Translation</h2>
+                    <div class="mode-indicator" id="modeIndicator">
+                        Click characters to build a path
+                    </div>
+                    <div class="translation-display" id="translationDisplay">
+                        <p class="info-text">Click on characters in the grid to see their translations. Build paths to extract poems.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Extracted Poem</h2>
+                    <div class="poem-display" id="poemDisplay">
+                        <p class="info-text">Select 4, 5, 6, or 7 characters to form a poem line. The translation will appear here.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>Preset Poems</h2>
+                    <div class="presets-list" id="presetsList"></div>
+                </div>
+
+                <div class="panel">
+                    <h2>Statistics</h2>
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-value">841</div>
+                            <div class="stat-label">Characters</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">7,958+</div>
+                            <div class="stat-label">Poems</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">29×29</div>
+                            <div class="stat-label">Grid Size</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="selectedCount">0</div>
+                            <div class="stat-label">Selected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // The complete 29x29 grid
+        const gridData = [
+            "琴清流楚激弦商秦曲发声悲摧藏音和咏思惟空堂心忧增慕怀惨伤仁",
+            "芳廊东步阶西游王姿淑窕窈伯邵南周风兴自后妃荒经离所怀叹嗟智",
+            "兰休桃林阴翳桑怀归思广河女卫郑楚樊厉节中闱淫遐旷路伤中情怀",
+            "凋翔飞燕巢双鸠土迤逶路遐志咏歌长叹不能奋飞妄清帏房君无家德",
+            "茂流泉情水激扬眷颀其人硕兴齐商双发歌我衮衣想华饰容朗镜明圣",
+            "熙长君思悲好仇旧蕤葳粲翠荣曜流华观冶容为谁感英曜珠光纷葩虞",
+            "阳愁叹发容摧伤乡悲情我感伤情徵宫羽同声相追所多思感谁为荣唐",
+            "春方殊离仁君荣身苦惟艰生患多殷忧缠情将如何钦苍誓穹终笃志贞",
+            "墙禽心滨均深身加怀忧是婴藻文繁虎龙宁自感思岑形荧城荣明庭妙",
+            "面伯改汉物日我愁思何漫漫荣曜华雕颀孜孜伤情幽未犹倾苟难闱显",
+            "殊在者之品润乎兼苦艰是丁丽状观饰容侧君在时岩在炎在不受乱华",
+            "意诚惑步育浸集悴我生何冤充颜曜绣衣梦想劳形峻慎盛戒义消作重",
+            "感故昵飘施愆殃少章时桑诗端无终始诗仁颜贞寒嵯深兴后姬源人荣",
+            "故遗亲飘生思愆精徽盛翳风比平始璇情贤丧物岁峨虑渐孽班祸谗章",
+            "新旧闻离天罪辜神恨昭感兴作苏心玑明别改知识深微至嬖女因奸臣",
+            "霜废远微地积何遐微业孟鹿丽氏诗图显行华终凋渊察大赵婕所佞贤",
+            "冰故离隔德怨因幽元倾宣鸣辞理兴义怨士容始松重远伐氏妤恃凶惟",
+            "齐君殊乔贵其备旷悼思伤怀日往感年衰念是旧愆涯祸用飞辞姿害圣",
+            "洁子我木平根尝远叹永感悲思忧远劳情谁为独居经在昭燕辇极我配",
+            "志惟同谁均难苦离戚戚情哀慕岁殊叹时贱女怀叹网防青实汉骄忠英",
+            "清新衾阴匀寻辛凤知我者谁世异浮奇倾鄙贱何如罗萌青生成盈贞皇",
+            "纯贞志一专所当麟沙流颓逝异浮沉华英翳曜潜阳林西昭景薄榆桑伦",
+            "望微精感通明神龙驰若然倏逝惟时年殊白日西移光滋愚谗漫顽凶匹",
+            "谁云浮寄身轻飞昭亏不盈无倏必盛有衰无日不陂流蒙谦退休孝慈离",
+            "思辉光饬粲殊文德离忠体一违心意志殊愤激何施电疑危远家和雍飘",
+            "想群离散妾孤遗怀仪容仰俯荣华丽饰身将与谁为逝容节敦贞淑思浮",
+            "怀悲哀声殊乖分圣赀何情忧感惟哀志节上通神祗推持所贞记自恭江",
+            "所春伤应翔雁归皇辞成者作体下遗葑菲采者无差生从是敬孝为基湘",
+            "亲刚柔有女为贱人房幽处己悯微身长路悲旷感生民梁山殊塞隔河津"
+        ];
+
+        // Complete translation dictionary
+        const translations = {
+            "琴": { pinyin: "qín", meaning: "zither, lute" },
+            "清": { pinyin: "qīng", meaning: "clear, pure" },
+            "流": { pinyin: "liú", meaning: "flow" },
+            "楚": { pinyin: "chǔ", meaning: "Chu state, grief" },
+            "激": { pinyin: "jī", meaning: "stir, arouse" },
+            "弦": { pinyin: "xián", meaning: "string" },
+            "商": { pinyin: "shāng", meaning: "Shang mode" },
+            "秦": { pinyin: "qín", meaning: "Qin state" },
+            "曲": { pinyin: "qǔ", meaning: "melody" },
+            "发": { pinyin: "fā", meaning: "emit, send" },
+            "声": { pinyin: "shēng", meaning: "sound, voice" },
+            "悲": { pinyin: "bēi", meaning: "sorrow" },
+            "摧": { pinyin: "cuī", meaning: "crush" },
+            "藏": { pinyin: "cáng", meaning: "hide, store" },
+            "音": { pinyin: "yīn", meaning: "tone, sound" },
+            "和": { pinyin: "hé", meaning: "harmony" },
+            "咏": { pinyin: "yǒng", meaning: "chant" },
+            "思": { pinyin: "sī", meaning: "think, yearn" },
+            "惟": { pinyin: "wéi", meaning: "only, but" },
+            "空": { pinyin: "kōng", meaning: "empty" },
+            "堂": { pinyin: "táng", meaning: "hall" },
+            "心": { pinyin: "xīn", meaning: "heart" },
+            "忧": { pinyin: "yōu", meaning: "worry, grief" },
+            "增": { pinyin: "zēng", meaning: "increase" },
+            "慕": { pinyin: "mù", meaning: "admire, yearn" },
+            "怀": { pinyin: "huái", meaning: "cherish, bosom" },
+            "惨": { pinyin: "cǎn", meaning: "miserable" },
+            "伤": { pinyin: "shāng", meaning: "wound, hurt" },
+            "仁": { pinyin: "rén", meaning: "benevolence" },
+            "芳": { pinyin: "fāng", meaning: "fragrant" },
+            "廊": { pinyin: "láng", meaning: "corridor" },
+            "东": { pinyin: "dōng", meaning: "east" },
+            "步": { pinyin: "bù", meaning: "step, walk" },
+            "阶": { pinyin: "jiē", meaning: "stairs" },
+            "西": { pinyin: "xī", meaning: "west" },
+            "游": { pinyin: "yóu", meaning: "wander" },
+            "王": { pinyin: "wáng", meaning: "king" },
+            "姿": { pinyin: "zī", meaning: "appearance" },
+            "淑": { pinyin: "shū", meaning: "gentle, virtuous" },
+            "窕": { pinyin: "tiǎo", meaning: "slender" },
+            "窈": { pinyin: "yǎo", meaning: "quiet, secluded" },
+            "伯": { pinyin: "bó", meaning: "earl, eldest" },
+            "邵": { pinyin: "shào", meaning: "Shao (place)" },
+            "南": { pinyin: "nán", meaning: "south" },
+            "周": { pinyin: "zhōu", meaning: "Zhou dynasty" },
+            "风": { pinyin: "fēng", meaning: "wind, customs" },
+            "兴": { pinyin: "xīng", meaning: "rise, prosper" },
+            "自": { pinyin: "zì", meaning: "self, from" },
+            "后": { pinyin: "hòu", meaning: "after, empress" },
+            "妃": { pinyin: "fēi", meaning: "consort" },
+            "荒": { pinyin: "huāng", meaning: "desolate" },
+            "经": { pinyin: "jīng", meaning: "classics" },
+            "离": { pinyin: "lí", meaning: "separate" },
+            "所": { pinyin: "suǒ", meaning: "place, that which" },
+            "叹": { pinyin: "tàn", meaning: "sigh" },
+            "嗟": { pinyin: "jiē", meaning: "alas" },
+            "智": { pinyin: "zhì", meaning: "wisdom" },
+            "兰": { pinyin: "lán", meaning: "orchid" },
+            "休": { pinyin: "xiū", meaning: "rest, cease" },
+            "桃": { pinyin: "táo", meaning: "peach" },
+            "林": { pinyin: "lín", meaning: "forest" },
+            "阴": { pinyin: "yīn", meaning: "shade, dark" },
+            "翳": { pinyin: "yì", meaning: "screen, shade" },
+            "桑": { pinyin: "sāng", meaning: "mulberry" },
+            "归": { pinyin: "guī", meaning: "return" },
+            "广": { pinyin: "guǎng", meaning: "broad" },
+            "河": { pinyin: "hé", meaning: "river" },
+            "女": { pinyin: "nǚ", meaning: "woman" },
+            "卫": { pinyin: "wèi", meaning: "Wei state" },
+            "郑": { pinyin: "zhèng", meaning: "Zheng state" },
+            "樊": { pinyin: "fán", meaning: "fence" },
+            "厉": { pinyin: "lì", meaning: "severe" },
+            "节": { pinyin: "jié", meaning: "integrity" },
+            "中": { pinyin: "zhōng", meaning: "middle" },
+            "闱": { pinyin: "wéi", meaning: "inner quarters" },
+            "淫": { pinyin: "yín", meaning: "excessive" },
+            "遐": { pinyin: "xiá", meaning: "distant" },
+            "旷": { pinyin: "kuàng", meaning: "vast" },
+            "路": { pinyin: "lù", meaning: "road" },
+            "情": { pinyin: "qíng", meaning: "emotion" },
+            "凋": { pinyin: "diāo", meaning: "wither" },
+            "翔": { pinyin: "xiáng", meaning: "soar" },
+            "飞": { pinyin: "fēi", meaning: "fly" },
+            "燕": { pinyin: "yàn", meaning: "swallow (bird)" },
+            "巢": { pinyin: "cháo", meaning: "nest" },
+            "双": { pinyin: "shuāng", meaning: "pair" },
+            "鸠": { pinyin: "jiū", meaning: "dove" },
+            "土": { pinyin: "tǔ", meaning: "earth" },
+            "迤": { pinyin: "yǐ", meaning: "winding" },
+            "逶": { pinyin: "wēi", meaning: "winding" },
+            "志": { pinyin: "zhì", meaning: "will, aspiration" },
+            "歌": { pinyin: "gē", meaning: "song" },
+            "长": { pinyin: "cháng", meaning: "long" },
+            "不": { pinyin: "bù", meaning: "not" },
+            "能": { pinyin: "néng", meaning: "able" },
+            "奋": { pinyin: "fèn", meaning: "exert" },
+            "妄": { pinyin: "wàng", meaning: "reckless, vain" },
+            "帏": { pinyin: "wéi", meaning: "curtain" },
+            "房": { pinyin: "fáng", meaning: "room" },
+            "君": { pinyin: "jūn", meaning: "lord, you" },
+            "无": { pinyin: "wú", meaning: "without" },
+            "家": { pinyin: "jiā", meaning: "home" },
+            "德": { pinyin: "dé", meaning: "virtue" },
+            "茂": { pinyin: "mào", meaning: "lush" },
+            "泉": { pinyin: "quán", meaning: "spring (water)" },
+            "水": { pinyin: "shuǐ", meaning: "water" },
+            "扬": { pinyin: "yáng", meaning: "raise" },
+            "眷": { pinyin: "juàn", meaning: "care for" },
+            "颀": { pinyin: "qí", meaning: "tall, elegant" },
+            "其": { pinyin: "qí", meaning: "his/her/that" },
+            "人": { pinyin: "rén", meaning: "person" },
+            "硕": { pinyin: "shuò", meaning: "great" },
+            "齐": { pinyin: "qí", meaning: "Qi state" },
+            "我": { pinyin: "wǒ", meaning: "I, me" },
+            "衮": { pinyin: "gǔn", meaning: "imperial robe" },
+            "衣": { pinyin: "yī", meaning: "clothes" },
+            "想": { pinyin: "xiǎng", meaning: "think" },
+            "华": { pinyin: "huá", meaning: "splendid" },
+            "饰": { pinyin: "shì", meaning: "adorn" },
+            "容": { pinyin: "róng", meaning: "appearance" },
+            "朗": { pinyin: "lǎng", meaning: "bright" },
+            "镜": { pinyin: "jìng", meaning: "mirror" },
+            "明": { pinyin: "míng", meaning: "bright" },
+            "圣": { pinyin: "shèng", meaning: "sage, holy" },
+            "熙": { pinyin: "xī", meaning: "bright" },
+            "好": { pinyin: "hǎo", meaning: "good, love" },
+            "仇": { pinyin: "chóu", meaning: "enemy, match" },
+            "旧": { pinyin: "jiù", meaning: "old, former" },
+            "蕤": { pinyin: "ruí", meaning: "drooping flowers" },
+            "葳": { pinyin: "wēi", meaning: "luxuriant" },
+            "粲": { pinyin: "càn", meaning: "bright" },
+            "翠": { pinyin: "cuì", meaning: "jade-green" },
+            "荣": { pinyin: "róng", meaning: "glory" },
+            "曜": { pinyin: "yào", meaning: "brilliant" },
+            "观": { pinyin: "guān", meaning: "view" },
+            "冶": { pinyin: "yě", meaning: "seductive" },
+            "为": { pinyin: "wéi", meaning: "for, be" },
+            "谁": { pinyin: "shéi", meaning: "who" },
+            "感": { pinyin: "gǎn", meaning: "feel" },
+            "英": { pinyin: "yīng", meaning: "hero, flower" },
+            "珠": { pinyin: "zhū", meaning: "pearl" },
+            "光": { pinyin: "guāng", meaning: "light" },
+            "纷": { pinyin: "fēn", meaning: "numerous" },
+            "葩": { pinyin: "pā", meaning: "flower" },
+            "虞": { pinyin: "yú", meaning: "worry, Yu dynasty" },
+            "阳": { pinyin: "yáng", meaning: "sun, yang" },
+            "愁": { pinyin: "chóu", meaning: "melancholy" },
+            "乡": { pinyin: "xiāng", meaning: "hometown" },
+            "徵": { pinyin: "zhǐ", meaning: "Zhi mode (music)" },
+            "宫": { pinyin: "gōng", meaning: "Gong mode, palace" },
+            "羽": { pinyin: "yǔ", meaning: "Yu mode, feather" },
+            "同": { pinyin: "tóng", meaning: "same, together" },
+            "相": { pinyin: "xiāng", meaning: "mutual" },
+            "追": { pinyin: "zhuī", meaning: "pursue" },
+            "多": { pinyin: "duō", meaning: "many" },
+            "唐": { pinyin: "táng", meaning: "Emperor Yao (堯), the great" },
+            "春": { pinyin: "chūn", meaning: "spring" },
+            "方": { pinyin: "fāng", meaning: "just, direction" },
+            "殊": { pinyin: "shū", meaning: "different, special" },
+            "身": { pinyin: "shēn", meaning: "body, self" },
+            "苦": { pinyin: "kǔ", meaning: "bitter" },
+            "艰": { pinyin: "jiān", meaning: "difficult" },
+            "生": { pinyin: "shēng", meaning: "life" },
+            "患": { pinyin: "huàn", meaning: "trouble" },
+            "殷": { pinyin: "yīn", meaning: "earnest" },
+            "缠": { pinyin: "chán", meaning: "entangle" },
+            "将": { pinyin: "jiāng", meaning: "will" },
+            "如": { pinyin: "rú", meaning: "like" },
+            "何": { pinyin: "hé", meaning: "what, how" },
+            "钦": { pinyin: "qīn", meaning: "respect" },
+            "苍": { pinyin: "cāng", meaning: "blue-green, heaven" },
+            "誓": { pinyin: "shì", meaning: "swear, oath" },
+            "穹": { pinyin: "qióng", meaning: "vault of heaven" },
+            "终": { pinyin: "zhōng", meaning: "end, finally" },
+            "笃": { pinyin: "dǔ", meaning: "sincere" },
+            "贞": { pinyin: "zhēn", meaning: "chaste, loyal" },
+            "墙": { pinyin: "qiáng", meaning: "wall" },
+            "禽": { pinyin: "qín", meaning: "bird" },
+            "滨": { pinyin: "bīn", meaning: "shore" },
+            "均": { pinyin: "jūn", meaning: "equal" },
+            "深": { pinyin: "shēn", meaning: "deep" },
+            "加": { pinyin: "jiā", meaning: "add" },
+            "是": { pinyin: "shì", meaning: "is" },
+            "婴": { pinyin: "yīng", meaning: "infant, entangle" },
+            "藻": { pinyin: "zǎo", meaning: "algae, literary grace" },
+            "文": { pinyin: "wén", meaning: "literature" },
+            "繁": { pinyin: "fán", meaning: "complex" },
+            "虎": { pinyin: "hǔ", meaning: "tiger" },
+            "龙": { pinyin: "lóng", meaning: "dragon" },
+            "宁": { pinyin: "níng", meaning: "peaceful" },
+            "岑": { pinyin: "cén", meaning: "small hill" },
+            "形": { pinyin: "xíng", meaning: "form" },
+            "荧": { pinyin: "yíng", meaning: "glimmer" },
+            "城": { pinyin: "chéng", meaning: "city" },
+            "庭": { pinyin: "tíng", meaning: "courtyard" },
+            "妙": { pinyin: "miào", meaning: "wonderful" },
+            "面": { pinyin: "miàn", meaning: "face" },
+            "改": { pinyin: "gǎi", meaning: "change" },
+            "汉": { pinyin: "hàn", meaning: "Han dynasty" },
+            "物": { pinyin: "wù", meaning: "thing" },
+            "日": { pinyin: "rì", meaning: "sun, day" },
+            "漫": { pinyin: "màn", meaning: "overflow, endless" },
+            "雕": { pinyin: "diāo", meaning: "carve" },
+            "孜": { pinyin: "zī", meaning: "diligent" },
+            "幽": { pinyin: "yōu", meaning: "secluded" },
+            "未": { pinyin: "wèi", meaning: "not yet" },
+            "犹": { pinyin: "yóu", meaning: "still, yet" },
+            "倾": { pinyin: "qīng", meaning: "incline" },
+            "苟": { pinyin: "gǒu", meaning: "if, careless" },
+            "难": { pinyin: "nán", meaning: "difficult" },
+            "显": { pinyin: "xiǎn", meaning: "manifest" },
+            "在": { pinyin: "zài", meaning: "at, exist" },
+            "者": { pinyin: "zhě", meaning: "one who" },
+            "之": { pinyin: "zhī", meaning: "of" },
+            "品": { pinyin: "pǐn", meaning: "grade" },
+            "润": { pinyin: "rùn", meaning: "moist" },
+            "乎": { pinyin: "hū", meaning: "question particle" },
+            "兼": { pinyin: "jiān", meaning: "also" },
+            "丁": { pinyin: "dīng", meaning: "man" },
+            "丽": { pinyin: "lì", meaning: "beautiful" },
+            "状": { pinyin: "zhuàng", meaning: "form" },
+            "侧": { pinyin: "cè", meaning: "side" },
+            "时": { pinyin: "shí", meaning: "time" },
+            "岩": { pinyin: "yán", meaning: "rock" },
+            "炎": { pinyin: "yán", meaning: "flame" },
+            "受": { pinyin: "shòu", meaning: "receive" },
+            "乱": { pinyin: "luàn", meaning: "chaos" },
+            "意": { pinyin: "yì", meaning: "meaning" },
+            "诚": { pinyin: "chéng", meaning: "sincere" },
+            "惑": { pinyin: "huò", meaning: "confuse" },
+            "育": { pinyin: "yù", meaning: "nurture" },
+            "浸": { pinyin: "jìn", meaning: "soak" },
+            "集": { pinyin: "jí", meaning: "gather" },
+            "悴": { pinyin: "cuì", meaning: "haggard" },
+            "冤": { pinyin: "yuān", meaning: "injustice" },
+            "充": { pinyin: "chōng", meaning: "fill" },
+            "颜": { pinyin: "yán", meaning: "face" },
+            "绣": { pinyin: "xiù", meaning: "embroider" },
+            "梦": { pinyin: "mèng", meaning: "dream" },
+            "劳": { pinyin: "láo", meaning: "toil" },
+            "峻": { pinyin: "jùn", meaning: "steep" },
+            "慎": { pinyin: "shèn", meaning: "careful" },
+            "盛": { pinyin: "shèng", meaning: "flourishing" },
+            "戒": { pinyin: "jiè", meaning: "warn" },
+            "义": { pinyin: "yì", meaning: "righteousness" },
+            "消": { pinyin: "xiāo", meaning: "vanish" },
+            "作": { pinyin: "zuò", meaning: "make" },
+            "重": { pinyin: "zhòng", meaning: "heavy" },
+            "故": { pinyin: "gù", meaning: "old, therefore" },
+            "昵": { pinyin: "nì", meaning: "intimate" },
+            "飘": { pinyin: "piāo", meaning: "float" },
+            "施": { pinyin: "shī", meaning: "bestow" },
+            "愆": { pinyin: "qiān", meaning: "fault" },
+            "殃": { pinyin: "yāng", meaning: "disaster" },
+            "少": { pinyin: "shǎo", meaning: "few" },
+            "章": { pinyin: "zhāng", meaning: "chapter" },
+            "诗": { pinyin: "shī", meaning: "poetry" },
+            "端": { pinyin: "duān", meaning: "end, proper" },
+            "始": { pinyin: "shǐ", meaning: "begin" },
+            "寒": { pinyin: "hán", meaning: "cold" },
+            "嵯": { pinyin: "cuó", meaning: "high, rocky" },
+            "姬": { pinyin: "jī", meaning: "lady" },
+            "源": { pinyin: "yuán", meaning: "source" },
+            "遗": { pinyin: "yí", meaning: "leave behind" },
+            "亲": { pinyin: "qīn", meaning: "parent, close" },
+            "精": { pinyin: "jīng", meaning: "essence" },
+            "徽": { pinyin: "huī", meaning: "emblem" },
+            "比": { pinyin: "bǐ", meaning: "compare" },
+            "平": { pinyin: "píng", meaning: "level" },
+            "璇": { pinyin: "xuán", meaning: "fine jade" },
+            "贤": { pinyin: "xián", meaning: "virtuous" },
+            "丧": { pinyin: "sàng", meaning: "lose" },
+            "岁": { pinyin: "suì", meaning: "year" },
+            "峨": { pinyin: "é", meaning: "lofty" },
+            "虑": { pinyin: "lǜ", meaning: "consider" },
+            "渐": { pinyin: "jiàn", meaning: "gradual" },
+            "孽": { pinyin: "niè", meaning: "evil" },
+            "班": { pinyin: "bān", meaning: "class" },
+            "祸": { pinyin: "huò", meaning: "disaster" },
+            "谗": { pinyin: "chán", meaning: "slander" },
+            "新": { pinyin: "xīn", meaning: "new" },
+            "闻": { pinyin: "wén", meaning: "hear" },
+            "天": { pinyin: "tiān", meaning: "heaven" },
+            "罪": { pinyin: "zuì", meaning: "crime" },
+            "辜": { pinyin: "gū", meaning: "crime" },
+            "神": { pinyin: "shén", meaning: "spirit" },
+            "恨": { pinyin: "hèn", meaning: "hate, regret" },
+            "昭": { pinyin: "zhāo", meaning: "clear" },
+            "苏": { pinyin: "sū", meaning: "Su, revive" },
+            "玑": { pinyin: "jī", meaning: "pearl, armillary" },
+            "别": { pinyin: "bié", meaning: "separate" },
+            "知": { pinyin: "zhī", meaning: "know" },
+            "识": { pinyin: "shí", meaning: "recognize" },
+            "微": { pinyin: "wēi", meaning: "subtle" },
+            "至": { pinyin: "zhì", meaning: "arrive" },
+            "嬖": { pinyin: "bì", meaning: "favorite" },
+            "因": { pinyin: "yīn", meaning: "because" },
+            "奸": { pinyin: "jiān", meaning: "treacherous" },
+            "臣": { pinyin: "chén", meaning: "minister" },
+            "霜": { pinyin: "shuāng", meaning: "frost" },
+            "废": { pinyin: "fèi", meaning: "abandon" },
+            "远": { pinyin: "yuǎn", meaning: "far" },
+            "地": { pinyin: "dì", meaning: "earth" },
+            "积": { pinyin: "jī", meaning: "accumulate" },
+            "业": { pinyin: "yè", meaning: "work, karma" },
+            "孟": { pinyin: "mèng", meaning: "Meng" },
+            "鹿": { pinyin: "lù", meaning: "deer" },
+            "氏": { pinyin: "shì", meaning: "clan" },
+            "图": { pinyin: "tú", meaning: "picture" },
+            "行": { pinyin: "xíng", meaning: "walk" },
+            "渊": { pinyin: "yuān", meaning: "abyss" },
+            "察": { pinyin: "chá", meaning: "observe" },
+            "大": { pinyin: "dà", meaning: "great" },
+            "赵": { pinyin: "zhào", meaning: "Zhao" },
+            "婕": { pinyin: "jié", meaning: "lady" },
+            "佞": { pinyin: "nìng", meaning: "flattery" },
+            "冰": { pinyin: "bīng", meaning: "ice" },
+            "隔": { pinyin: "gé", meaning: "separate" },
+            "怨": { pinyin: "yuàn", meaning: "resentment" },
+            "元": { pinyin: "yuán", meaning: "origin" },
+            "宣": { pinyin: "xuān", meaning: "declare" },
+            "鸣": { pinyin: "míng", meaning: "cry" },
+            "辞": { pinyin: "cí", meaning: "words" },
+            "理": { pinyin: "lǐ", meaning: "reason" },
+            "士": { pinyin: "shì", meaning: "scholar" },
+            "松": { pinyin: "sōng", meaning: "pine" },
+            "伐": { pinyin: "fá", meaning: "attack" },
+            "妤": { pinyin: "yú", meaning: "handmaid" },
+            "恃": { pinyin: "shì", meaning: "rely on" },
+            "凶": { pinyin: "xiōng", meaning: "fierce" },
+            "乔": { pinyin: "qiáo", meaning: "tall" },
+            "贵": { pinyin: "guì", meaning: "noble" },
+            "备": { pinyin: "bèi", meaning: "prepare" },
+            "悼": { pinyin: "dào", meaning: "mourn" },
+            "往": { pinyin: "wǎng", meaning: "go" },
+            "年": { pinyin: "nián", meaning: "year" },
+            "衰": { pinyin: "shuāi", meaning: "decline" },
+            "念": { pinyin: "niàn", meaning: "think of" },
+            "涯": { pinyin: "yá", meaning: "shore" },
+            "用": { pinyin: "yòng", meaning: "use" },
+            "害": { pinyin: "hài", meaning: "harm" },
+            "洁": { pinyin: "jié", meaning: "pure" },
+            "子": { pinyin: "zǐ", meaning: "child" },
+            "木": { pinyin: "mù", meaning: "wood" },
+            "根": { pinyin: "gēn", meaning: "root" },
+            "尝": { pinyin: "cháng", meaning: "taste, once" },
+            "永": { pinyin: "yǒng", meaning: "eternal" },
+            "独": { pinyin: "dú", meaning: "alone" },
+            "居": { pinyin: "jū", meaning: "dwell" },
+            "辇": { pinyin: "niǎn", meaning: "imperial carriage" },
+            "极": { pinyin: "jí", meaning: "extreme" },
+            "配": { pinyin: "pèi", meaning: "match, spouse" },
+            "戚": { pinyin: "qī", meaning: "relative, sorrow" },
+            "哀": { pinyin: "āi", meaning: "grief" },
+            "贱": { pinyin: "jiàn", meaning: "lowly" },
+            "网": { pinyin: "wǎng", meaning: "net" },
+            "防": { pinyin: "fáng", meaning: "guard" },
+            "青": { pinyin: "qīng", meaning: "green, youth" },
+            "实": { pinyin: "shí", meaning: "real" },
+            "骄": { pinyin: "jiāo", meaning: "proud" },
+            "忠": { pinyin: "zhōng", meaning: "loyal" },
+            "新": { pinyin: "xīn", meaning: "new" },
+            "衾": { pinyin: "qīn", meaning: "quilt" },
+            "匀": { pinyin: "yún", meaning: "even" },
+            "寻": { pinyin: "xún", meaning: "seek" },
+            "辛": { pinyin: "xīn", meaning: "bitter" },
+            "凤": { pinyin: "fèng", meaning: "phoenix" },
+            "世": { pinyin: "shì", meaning: "world" },
+            "异": { pinyin: "yì", meaning: "different" },
+            "浮": { pinyin: "fú", meaning: "float" },
+            "奇": { pinyin: "qí", meaning: "strange" },
+            "鄙": { pinyin: "bǐ", meaning: "despise" },
+            "罗": { pinyin: "luó", meaning: "net, gauze" },
+            "萌": { pinyin: "méng", meaning: "sprout" },
+            "成": { pinyin: "chéng", meaning: "become" },
+            "盈": { pinyin: "yíng", meaning: "full" },
+            "皇": { pinyin: "huáng", meaning: "emperor" },
+            "纯": { pinyin: "chún", meaning: "pure" },
+            "一": { pinyin: "yī", meaning: "one" },
+            "专": { pinyin: "zhuān", meaning: "focused" },
+            "当": { pinyin: "dāng", meaning: "should" },
+            "麟": { pinyin: "lín", meaning: "qilin" },
+            "沙": { pinyin: "shā", meaning: "sand" },
+            "颓": { pinyin: "tuí", meaning: "collapse" },
+            "逝": { pinyin: "shì", meaning: "pass away" },
+            "沉": { pinyin: "chén", meaning: "sink" },
+            "潜": { pinyin: "qián", meaning: "hidden" },
+            "景": { pinyin: "jǐng", meaning: "scene" },
+            "薄": { pinyin: "bó", meaning: "thin" },
+            "榆": { pinyin: "yú", meaning: "elm" },
+            "伦": { pinyin: "lún", meaning: "ethics" },
+            "望": { pinyin: "wàng", meaning: "gaze, hope" },
+            "通": { pinyin: "tōng", meaning: "through" },
+            "驰": { pinyin: "chí", meaning: "gallop" },
+            "若": { pinyin: "ruò", meaning: "like, if" },
+            "然": { pinyin: "rán", meaning: "so, thus" },
+            "倏": { pinyin: "shū", meaning: "sudden" },
+            "白": { pinyin: "bái", meaning: "white" },
+            "移": { pinyin: "yí", meaning: "move" },
+            "滋": { pinyin: "zī", meaning: "grow" },
+            "愚": { pinyin: "yú", meaning: "foolish" },
+            "顽": { pinyin: "wán", meaning: "stubborn" },
+            "匹": { pinyin: "pǐ", meaning: "match" },
+            "云": { pinyin: "yún", meaning: "cloud, say" },
+            "寄": { pinyin: "jì", meaning: "send" },
+            "轻": { pinyin: "qīng", meaning: "light" },
+            "亏": { pinyin: "kuī", meaning: "lose" },
+            "必": { pinyin: "bì", meaning: "must" },
+            "有": { pinyin: "yǒu", meaning: "have" },
+            "陂": { pinyin: "bēi", meaning: "slope" },
+            "蒙": { pinyin: "méng", meaning: "receive" },
+            "谦": { pinyin: "qiān", meaning: "humble" },
+            "退": { pinyin: "tuì", meaning: "retreat" },
+            "孝": { pinyin: "xiào", meaning: "filial" },
+            "慈": { pinyin: "cí", meaning: "kind" },
+            "辉": { pinyin: "huī", meaning: "splendor" },
+            "饬": { pinyin: "chì", meaning: "order" },
+            "体": { pinyin: "tǐ", meaning: "body" },
+            "违": { pinyin: "wéi", meaning: "disobey" },
+            "愤": { pinyin: "fèn", meaning: "anger" },
+            "电": { pinyin: "diàn", meaning: "lightning" },
+            "疑": { pinyin: "yí", meaning: "doubt" },
+            "危": { pinyin: "wēi", meaning: "danger" },
+            "雍": { pinyin: "yōng", meaning: "harmony" },
+            "群": { pinyin: "qún", meaning: "group" },
+            "散": { pinyin: "sàn", meaning: "scatter" },
+            "妾": { pinyin: "qiè", meaning: "concubine" },
+            "孤": { pinyin: "gū", meaning: "orphan, alone" },
+            "仪": { pinyin: "yí", meaning: "ceremony" },
+            "仰": { pinyin: "yǎng", meaning: "look up" },
+            "俯": { pinyin: "fǔ", meaning: "look down" },
+            "与": { pinyin: "yǔ", meaning: "with" },
+            "敦": { pinyin: "dūn", meaning: "sincere" },
+            "乖": { pinyin: "guāi", meaning: "perverse" },
+            "分": { pinyin: "fēn", meaning: "divide" },
+            "赀": { pinyin: "zī", meaning: "wealth" },
+            "上": { pinyin: "shàng", meaning: "above" },
+            "祗": { pinyin: "zhī", meaning: "respect" },
+            "推": { pinyin: "tuī", meaning: "push" },
+            "持": { pinyin: "chí", meaning: "hold" },
+            "记": { pinyin: "jì", meaning: "record" },
+            "恭": { pinyin: "gōng", meaning: "respectful" },
+            "江": { pinyin: "jiāng", meaning: "river" },
+            "应": { pinyin: "yīng", meaning: "should" },
+            "雁": { pinyin: "yàn", meaning: "wild goose" },
+            "皇": { pinyin: "huáng", meaning: "emperor" },
+            "下": { pinyin: "xià", meaning: "below" },
+            "葑": { pinyin: "fēng", meaning: "turnip" },
+            "菲": { pinyin: "fēi", meaning: "humble" },
+            "采": { pinyin: "cǎi", meaning: "pick" },
+            "差": { pinyin: "chā", meaning: "difference" },
+            "从": { pinyin: "cóng", meaning: "follow" },
+            "敬": { pinyin: "jìng", meaning: "respect" },
+            "基": { pinyin: "jī", meaning: "foundation" },
+            "湘": { pinyin: "xiāng", meaning: "Xiang River" },
+            "刚": { pinyin: "gāng", meaning: "firm" },
+            "柔": { pinyin: "róu", meaning: "soft" },
+            "处": { pinyin: "chù", meaning: "place" },
+            "己": { pinyin: "jǐ", meaning: "self" },
+            "悯": { pinyin: "mǐn", meaning: "pity" },
+            "民": { pinyin: "mín", meaning: "people" },
+            "梁": { pinyin: "liáng", meaning: "bridge" },
+            "山": { pinyin: "shān", meaning: "mountain" },
+            "塞": { pinyin: "sāi", meaning: "block" },
+            "津": { pinyin: "jīn", meaning: "ford" }
+        };
+
+        // Preset poems
+        const presetPoems = [
+            {
+                title: "Border Poem (Clockwise)",
+                desc: "The outer ring read clockwise",
+                chars: "仁智怀德圣虞唐贞志笃终誓穹苍钦所感想妄淫荒心忧增慕怀惨伤",
+                translation: "Benevolence and wisdom cherish virtue—sages Shun and Yao. Chaste will sincere to the end, swearing to the vault of heaven. Revering what I feel—vain, lustful, desolate. Heart's grief grows in yearning, cherishing miserable wounds."
+            },
+            {
+                title: "Border Poem (Counter-clockwise)",
+                desc: "The outer ring read counter-clockwise",
+                chars: "伤惨怀慕增忧心荒淫妄想感所钦苍穹誓终笃志贞唐虞圣德怀智仁",
+                translation: "Wounded and miserable, cherishing yearning, worry grows. Desolate licentiousness, vain thoughts—feeling what I revere. Vault of heaven, swearing to the end, sincere will. Yao and Shun—sage virtue cherishing wisdom and benevolence."
+            },
+            {
+                title: "First Row",
+                desc: "Top row left to right",
+                chars: "琴清流楚激弦商秦曲发声悲摧藏音和咏思惟空堂心忧增慕怀惨伤仁",
+                translation: "The zither's clear tones flow like Chu's stirring strings; Shang and Qin melodies send forth sounds of sorrow, crushing hidden harmonies. Chanting and longing—only the empty hall. My heart's grief grows, yearning and cherishing, miserable wounds, benevolence."
+            },
+            {
+                title: "First Column",
+                desc: "Left column top to bottom",
+                chars: "琴芳兰凋茂熙阳春墙面殊意感故新霜冰齐洁志清纯望谁思想怀所亲",
+                translation: "Zither fragrance, orchids wither, flourishing brightness, yang spring. Wall face special meaning, feeling old and new. Frost ice Qi pure, will clear and pure. Gazing—who thinks and imagines, cherishing that which is close."
+            },
+            {
+                title: "Right Column",
+                desc: "Right column top to bottom",
+                chars: "仁智怀德圣虞唐贞妙显华重荣章臣贤惟圣配英皇伦匹离飘浮江湘津",
+                translation: "Benevolence, wisdom, cherishing virtue—sages Shun and Yao, chaste and wonderful. Manifest splendor, heavy glory chapters. Ministers virtuous, only sages matched. Hero emperors, ethics matched. Separated drifting, floating river Xiang ford."
+            },
+            {
+                title: "Center Cross (Horizontal)",
+                desc: "Row 15 through the center",
+                chars: "新旧闻离天罪辜神恨昭感兴作苏心玑明别改知识深微至嬖女因奸臣",
+                translation: "New and old news of separation—heaven's crime, guilt. Spirit's regret clearly felt, rising to make. Su's heart, the armillary sphere, bright. Separation and change—deep subtle knowledge. Favorite woman, because of treacherous ministers."
+            }
+        ];
+
+        let selectedCells = [];
+        let mode = 'click'; // 'click' or 'drag'
+        let isDragging = false;
+
+        function init() {
+            renderGrid();
+            renderPresets();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            for (let row = 0; row < 29; row++) {
+                for (let col = 0; col < 29; col++) {
+                    const char = gridData[row][col];
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = char;
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.dataset.char = char;
+
+                    // Mark center
+                    if (row === 14 && col === 14) {
+                        cell.classList.add('center');
+                    }
+
+                    // Mark border
+                    if (row === 0 || row === 28 || col === 0 || col === 28) {
+                        cell.classList.add('border-cell');
+                    }
+
+                    cell.addEventListener('click', () => handleCellClick(row, col, char));
+                    cell.addEventListener('mousedown', () => { if (mode === 'drag') isDragging = true; });
+                    cell.addEventListener('mouseenter', () => {
+                        if (isDragging && mode === 'drag') handleCellClick(row, col, char);
+                    });
+                    cell.addEventListener('mouseup', () => isDragging = false);
+
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(row, col, char) {
+            const key = `${row}-${col}`;
+            const existingIndex = selectedCells.findIndex(c => c.key === key);
+
+            if (existingIndex >= 0) {
+                // Remove if already selected
+                selectedCells.splice(existingIndex, 1);
+            } else {
+                // Add new selection
+                selectedCells.push({ row, col, char, key });
+            }
+
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update grid visual
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('path', 'selected');
+                const orderSpan = cell.querySelector('.order');
+                if (orderSpan) orderSpan.remove();
+            });
+
+            selectedCells.forEach((cell, index) => {
+                const cellEl = document.querySelector(`.cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                if (cellEl) {
+                    cellEl.classList.add('path');
+                    const order = document.createElement('span');
+                    order.className = 'order';
+                    order.textContent = index + 1;
+                    cellEl.appendChild(order);
+                }
+            });
+
+            // Update translation display
+            const display = document.getElementById('translationDisplay');
+            if (selectedCells.length === 0) {
+                display.innerHTML = '<p class="info-text">Click on characters in the grid to see their translations. Build paths to extract poems.</p>';
+            } else {
+                display.innerHTML = selectedCells.map((cell, i) => {
+                    const trans = translations[cell.char] || { pinyin: '?', meaning: '?' };
+                    return `
+                        <div class="char-entry">
+                            <span class="char-chinese">${cell.char}</span>
+                            <span class="char-pinyin">${trans.pinyin}</span>
+                            <span class="char-meaning">${trans.meaning}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Update poem display
+            const poemDisplay = document.getElementById('poemDisplay');
+            if (selectedCells.length >= 4) {
+                const chinese = selectedCells.map(c => c.char).join('');
+                const english = selectedCells.map(c => {
+                    const trans = translations[c.char] || { meaning: '?' };
+                    return trans.meaning;
+                }).join(' ');
+
+                poemDisplay.innerHTML = `
+                    <div class="poem-chinese">${chinese}</div>
+                    <div class="poem-english">${english}</div>
+                `;
+            } else {
+                poemDisplay.innerHTML = '<p class="info-text">Select 4+ characters to form a poem line.</p>';
+            }
+
+            // Update count
+            document.getElementById('selectedCount').textContent = selectedCells.length;
+        }
+
+        function clearSelection() {
+            selectedCells = [];
+            updateDisplay();
+        }
+
+        function toggleMode() {
+            mode = mode === 'click' ? 'drag' : 'click';
+            document.getElementById('modeBtn').textContent = `Mode: ${mode === 'click' ? 'Click Path' : 'Drag Path'}`;
+            document.getElementById('modeIndicator').textContent = mode === 'click'
+                ? 'Click characters to build a path'
+                : 'Click and drag to trace a path';
+        }
+
+        function showBorder() {
+            clearSelection();
+            // Top row left to right
+            for (let col = 0; col < 29; col++) {
+                selectedCells.push({ row: 0, col, char: gridData[0][col], key: `0-${col}` });
+            }
+            // Right column down
+            for (let row = 1; row < 29; row++) {
+                selectedCells.push({ row, col: 28, char: gridData[row][28], key: `${row}-28` });
+            }
+            // Bottom row right to left
+            for (let col = 27; col >= 0; col--) {
+                selectedCells.push({ row: 28, col, char: gridData[28][col], key: `28-${col}` });
+            }
+            // Left column up
+            for (let row = 27; row > 0; row--) {
+                selectedCells.push({ row, col: 0, char: gridData[row][0], key: `${row}-0` });
+            }
+            updateDisplay();
+        }
+
+        function readRow(row) {
+            clearSelection();
+            for (let col = 0; col < 29; col++) {
+                selectedCells.push({ row, col, char: gridData[row][col], key: `${row}-${col}` });
+            }
+            updateDisplay();
+        }
+
+        function readColumn(col) {
+            clearSelection();
+            for (let row = 0; row < 29; row++) {
+                selectedCells.push({ row, col, char: gridData[row][col], key: `${row}-${col}` });
+            }
+            updateDisplay();
+        }
+
+        function readDiagonal() {
+            clearSelection();
+            for (let i = 0; i < 29; i++) {
+                selectedCells.push({ row: i, col: i, char: gridData[i][i], key: `${i}-${i}` });
+            }
+            updateDisplay();
+        }
+
+        function renderPresets() {
+            const list = document.getElementById('presetsList');
+            list.innerHTML = presetPoems.map((poem, i) => `
+                <div class="preset-item" onclick="loadPreset(${i})">
+                    <div class="preset-title">${poem.title}</div>
+                    <div class="preset-desc">${poem.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        function loadPreset(index) {
+            const poem = presetPoems[index];
+            clearSelection();
+
+            // For preset poems, we just display them directly
+            const display = document.getElementById('translationDisplay');
+            const chars = poem.chars.split('');
+            display.innerHTML = chars.map(char => {
+                const trans = translations[char] || { pinyin: '?', meaning: '?' };
+                return `
+                    <div class="char-entry">
+                        <span class="char-chinese">${char}</span>
+                        <span class="char-pinyin">${trans.pinyin}</span>
+                        <span class="char-meaning">${trans.meaning}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const poemDisplay = document.getElementById('poemDisplay');
+            poemDisplay.innerHTML = `
+                <div class="poem-chinese">${poem.chars}</div>
+                <div class="poem-english" style="font-size: 0.85rem;">${poem.translation}</div>
+            `;
+
+            document.getElementById('selectedCount').textContent = chars.length;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('mouseup', () => isDragging = false);
+    </script>
+</body>
+</html>
